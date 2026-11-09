@@ -1,0 +1,69 @@
+{
+  "project": "omni-clipboard",
+  "version": "0.1.0",
+  "repository": "https://github.com/pacjung64-cmyk/omni-clipboard",
+  "release": "https://github.com/pacjung64-cmyk/omni-clipboard/releases/tag/v0.1.0",
+  "arch": "windows-x64",
+  "stack": {
+    "language": "Rust (edition 2021)",
+    "database": "SQLite 3 with FTS5 full-text search",
+    "gui": "Microsoft Edge App Mode (frameless acrylic UI)",
+    "http_server": "tiny_http on 127.0.0.1:42069",
+    "win32_apis": [
+      "AddClipboardFormatListener",
+      "RegisterHotKey",
+      "SendInput"
+    ]
+  },
+  "features": [
+    {
+      "name": "Clipboard Model & SHA-256 Deduplication",
+      "file": "src/models.rs",
+      "status": "completed",
+      "tested": true
+    },
+    {
+      "name": "Zero-Leak Privacy Sanitizer",
+      "file": "src/sanitizer.rs",
+      "status": "completed",
+      "tested": true,
+      "details": "Masks API keys (sk-proj, ghp, Bearer), JWT tokens, and Luhn-validated credit cards"
+    },
+    {
+      "name": "SQLite FTS5 Storage Engine & FakeStorage Test Double",
+      "file": "src/storage.rs",
+      "status": "completed",
+      "tested": true
+    },
+    {
+      "name": "Win32 Background Listener & Global Hotkeys",
+      "file": "src/listener.rs",
+      "status": "completed",
+      "tested": true,
+      "hotkeys": {
+        "history": "Ctrl+Shift+V",
+        "ai_lens": "Alt+Space"
+      }
+    },
+    {
+      "name": "Instant AI Lens Multi-Engine Client",
+      "file": "src/ai_lens.rs",
+      "status": "completed",
+      "tested": true,
+      "engines": ["Ollama", "Google Gemini", "Groq", "OpenAI-compatible"]
+    },
+    {
+      "name": "Raycast-style Standalone Acrylic UI",
+      "file": "src/ui.html",
+      "status": "completed",
+      "tested": true
+    },
+    {
+      "name": "Automated Regression Test Suite",
+      "file": "tests/core_tests.rs",
+      "status": "completed",
+      "tested": true,
+      "test_count": 6
+    }
+  ]
+}
