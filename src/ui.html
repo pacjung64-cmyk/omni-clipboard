@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omni-Clipboard & Instant AI Lens</title>
+  <style>
+    :root {
+      --bg-base: #0f172a;
+      --bg-surface: #1e293b;
+      --bg-hover: #334155;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Header & Tabs */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-icon {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #0f172a;
+      padding: 3px;
+      border-radius: 8px;
+    }
+
+    .tab-btn {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Search Box */
+    .search-container {
+      padding: 12px 16px;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px 10px 38px;
+      font-size: 14px;
+      color: var(--text-main);
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 28px;
+      top: 22px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    /* List items */
+    .clip-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.05s;
+      border: 1px solid transparent;
+    }
+
+    .clip-item:hover, .clip-item.selected {
+      background: var(--bg-hover);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .clip-item.selected {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.15);
+    }
+
+    .clip-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 80%;
+    }
+
+    .clip-preview {
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .clip-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-code { background: rgba(6, 182, 212, 0.2); color: var(--cyan); }
+    .badge-url { background: rgba(16, 185, 129, 0.2); color: var(--emerald); }
+    .badge-sensitive { background: rgba(244, 63, 94, 0.2); color: var(--rose); }
+    .badge-text { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+    .clip-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pin-btn, .del-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .pin-btn:hover { color: var(--amber); }
+    .del-btn:hover { color: var(--rose); }
+    .is-pinned { color: var(--amber); }
+
+    /* AI Lens View */
+    .ai-view {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .ai-source-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 100px;
+      overflow-y: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .ai-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .action-chip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .action-chip:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .ai-custom-input {
+      display: flex;
+      gap: 6px;
+    }
+
+    .custom-query-box {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: white;
+      outline: none;
+    }
+
+    .ask-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .ai-result-box {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-main);
+      white-space: pre-wrap;
+    }
+
+    .ai-footer-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Footer / Keyboard helper */
+    .footer {
+      padding: 8px 16px;
+      background: rgba(15, 23, 42, 0.8);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .keys {
+      display: flex;
+      gap: 12px;
+    }
+
+    .key-badge {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <span>Omni-Clipboard</span>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-clips" onclick="switchTab('clips')">📋 History</button>
+      <button class="tab-btn" id="tab-lens" onclick="switchTab('lens')">✨ AI Lens</button>
+    </div>
+  </div>
+
+  <!-- Search for Clips View -->
+  <div class="search-container" id="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="search-input" placeholder="Type to search clips (fuzzy)..." autofocus />
+  </div>
+
+  <!-- Clips List View -->
+  <div class="content-area" id="clips-view">
+    <div id="clip-list"></div>
+  </div>
+
+  <!-- AI Lens View -->
+  <div class="ai-view" id="lens-view">
+    <div class="ai-source-box" id="lens-source-text">Select or copy any text to analyze with AI Lens...</div>
+    
+    <div class="ai-actions">
+      <button class="action-chip" onclick="runAiAction('Explain')">⚡ Explain</button>
+      <button class="action-chip" onclick="runAiAction('TranslateThEn')">🌐 Translate (TH/EN)</button>
+      <button class="action-chip" onclick="runAiAction('FixCode')">🛠️ Fix & Optimize Code</button>
+      <button class="action-chip" onclick="runAiAction('PolishTone')">✍️ Polish Writing</button>
+    </div>
+
+    <div class="ai-custom-input">
+      <input type="text" id="custom-prompt" class="custom-query-box" placeholder="Ask custom query about this text..." />
+      <button class="ask-btn" onclick="runCustomPrompt()">Ask AI</button>
+    </div>
+
+    <div class="ai-result-box" id="ai-result">AI response will appear here...</div>
+
+    <div class="ai-footer-bar">
+      <button class="action-chip" onclick="copyAiResult()">📋 Copy Result</button>
+      <button class="action-chip" style="background:var(--emerald)" onclick="pasteAiResult()">🚀 Paste Directly</button>
+    </div>
+  </div>
+
+  <!-- Bottom Key Shortcuts -->
+  <div class="footer">
+    <div class="keys">
+      <span><span class="key-badge">↑/↓</span> Navigate</span>
+      <span><span class="key-badge">Enter</span> Paste</span>
+      <span><span class="key-badge">P</span> Pin</span>
+      <span><span class="key-badge">Del</span> Delete</span>
+    </div>
+    <div><span class="key-badge">Alt + Space</span> AI Lens</div>
+  </div>
+
+  <script>
+    let clips = [];
+    let selectedIndex = 0;
+    let currentTab = 'clips';
+
+    async function loadClips(query = "") {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        clips = await res.json();
+        renderClips();
+      } catch (err) {
+        console.error("Failed to fetch clips", err);
+      }
+    }
+
+    function renderClips() {
+      const container = document.getElementById('clip-list');
+      container.innerHTML = '';
+
+      if (clips.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-muted)">No clips found</div>';
+        return;
+      }
+
+      clips.forEach((clip, index) => {
+        const item = document.createElement('div');
+        item.className = `clip-item ${index === selectedIndex ? 'selected' : ''}`;
+        
+        let typeBadge = '<span class="badge badge-text">TEXT</span>';
+        if (typeof clip.content_type === 'object' && clip.content_type.Code) {
+          typeBadge = `<span class="badge badge-code">${clip.content_type.Code.language.toUpperCase()}</span>`;
+        } else if (clip.content_type === 'Url') {
+          typeBadge = '<span class="badge badge-url">URL</span>';
+        } else if (clip.content_type === 'Sensitive') {
+          typeBadge = '<span class="badge badge-sensitive">SECRET</span>';
+        }
+
+        const timeStr = new Date(clip.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const app = clip.source_app ? `· ${clip.source_app}` : '';
+
+        item.innerHTML = `
+          <div class="clip-left">
+            <div class="clip-preview">${escapeHtml(clip.preview_text)}</div>
+            <div class="clip-meta">
+              ${typeBadge}
+              <span>${timeStr} ${escapeHtml(app)}</span>
+              <span>· ${clip.char_count} chars</span>
+            </div>
+          </div>
+          <div class="clip-right">
+            <button class="pin-btn ${clip.is_pinned ? 'is-pinned' : ''}" onclick="togglePin(event, '${clip.id}', ${!clip.is_pinned})">📌</button>
+            <button class="del-btn" onclick="deleteClip(event, '${clip.id}')">✕</button>
+          </div>
+        `;
+
+        item.addEventListener('click', () => selectAndPaste(clip));
+        container.appendChild(item);
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text || '';
+      return div.innerHTML;
+    }
+
+    async function selectAndPaste(clip) {
+      await fetch('/api/paste', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: clip.id, content: clip.raw_content })
+      });
+    }
+
+    async function togglePin(e, id, pinned) {
+      e.stopPropagation();
+      await fetch('/api/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, pinned })
+      });
+      loadClips(document.getElementById('search-input').value);
+    }
+
+    async function deleteClip(e, id) {
+      e.stopPropagation();
+      await fetch('/api/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      loadClips(document.getElementById('search-input').value);
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tab-clips').classList.toggle('active', tab === 'clips');
+      document.getElementById('tab-lens').classList.toggle('active', tab === 'lens');
+      
+      document.getElementById('search-box').style.display = tab === 'clips' ? 'block' : 'none';
+      document.getElementById('clips-view').style.display = tab === 'clips' ? 'block' : 'none';
+      document.getElementById('lens-view').style.display = tab === 'lens' ? 'flex' : 'none';
+
+      if (tab === 'lens' && clips.length > 0) {
+        const activeClip = clips[selectedIndex] || clips[0];
+        document.getElementById('lens-source-text').innerText = activeClip.raw_content;
+      }
+    }
+
+    async function runAiAction(actionName) {
+      const source = document.getElementById('lens-source-text').innerText;
+      const resultBox = document.getElementById('ai-result');
+      resultBox.innerText = `Generating ${actionName}...`;
+
+      try {
+        const res = await fetch('/api/ai_lens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: actionName, text: source })
+        });
+        const data = await res.json();
+        resultBox.innerText = data.result || data.error;
+      } catch (err) {
+        resultBox.innerText = `Error: ${err.message}`;
+      }
+    }
+
+    function runCustomPrompt() {
+      const prompt = document.getElementById('custom-prompt').value.trim();
+      if (!prompt) return;
+      runAiAction(`Custom:${prompt}`);
+    }
+
+    function copyAiResult() {
+      const text = document.getElementById('ai-result').innerText;
+      navigator.clipboard.writeText(text);
+    }
+
+    async function pasteAiResult() {
+      const text = document.getElementById('ai-result').innerText;
+      await fetch('/api/paste_text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (currentTab === 'clips') {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (selectedIndex < clips.length - 1) {
+            selectedIndex++;
+            renderClips();
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (selectedIndex > 0) {
+            selectedIndex--;
+            renderClips();
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (clips[selectedIndex]) {
+            selectAndPaste(clips[selectedIndex]);
+          }
+        } else if (e.key === 'Escape') {
+          fetch('/api/hide', { method: 'POST' });
+        }
+      }
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      selectedIndex = 0;
+      loadClips(e.target.value);
+    });
+
+    // Initial load
+    loadClips();
+  </script>
+</body>
+</html>
