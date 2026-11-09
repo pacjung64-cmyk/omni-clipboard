@@ -1,0 +1,7 @@
+/target
+omniclip.db
+omniclip.db-journal
+*.log
+.env
+.DS_Store
+Thumbs.db
